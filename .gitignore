@@ -1,0 +1,12 @@
+# NEVER upload these to GitHub (user data + secrets)
+bot_data/
+*.db
+*.db-wal
+*.db-shm
+*.before_restore
+config.json
+data_backup_v20.json
+stock_backup_*.json
+error_log.txt
+.env
+__pycache__/
