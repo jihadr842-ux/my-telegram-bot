@@ -3999,7 +3999,7 @@ class BotApp:
 # ============================================================
 DEFAULT_BOT_TOKEN = "9293694844:AAH8wZ2OnfQV-X95DvAt29j67mBnQ7hVYI4"      # <- আপনার বট টোকেন (BotFather থেকে)
 DEFAULT_MASTER_CHAT_ID = "5504053909"                                      # <- আপনার টেলিগ্রাম চ্যাট আইডি
-DEFAULT_GEMINI_API_KEY = "AQ.Ab8RN6JnDUilwk8HrqXkXGDG2k8TDnF-5m5Yh3vGr_BuzOwSeQ"         # <- আপনার Gemini API কী
+DEFAULT_GEMINI_API_KEY = "AQ.Ab8RN6KQYXxbTWVndXuG4TOQ0wp_EfJh1mJM4yelm_G3iyjbSQ"         # <- আপনার Gemini API কী
 
 
 def load_settings():
