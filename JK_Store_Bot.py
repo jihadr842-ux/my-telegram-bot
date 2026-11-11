@@ -3930,7 +3930,7 @@ DEFAULT_GEMINI_API_KEY = "AQ.Ab8RN6KMkjWBd1nkyhC4CqIfAcffDTP5-oGGqwPixaYgFmkARg"
 
 def load_settings():
     """token + master chat id: environment > config.json > desktop backup json > default above."""
-    token = os.environ.get("BOT_TOKEN", "9057990624:AAEoVs-HD1cxfwwfp8GrlhhnYnHxOXFJkOs").strip()
+    token = os.environ.get("BOT_TOKEN", "9293694844:AAH8wZ2OnfQV-X95DvAt29j67mBnQ7hVYI4").strip()
     cid = os.environ.get("MASTER_CHAT_ID", "5504053909").strip()
     for path, tk_key, id_key in ((CONFIG_FILE, "token", "master_chat_id"),
                                  (BACKUP_FILE, "tg_token", "tg_chat_id")):
