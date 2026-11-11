@@ -1,0 +1,3 @@
+# Railway: installs the Tesseract OCR program (English + Bengali) on the server
+[phases.setup]
+aptPkgs = ["...", "tesseract-ocr", "tesseract-ocr-eng", "tesseract-ocr-ben"]
