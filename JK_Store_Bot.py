@@ -166,27 +166,6 @@ PAYMENT_INFO_USD = """💳 Deposit / Payment Methods (USD)
 🔹 Binance Pay ID: `1234153609`
 🔹 BEP-20 (USDT) Network:
 `0x028dc4c629380a54805066b3ca95539eacd3b766`
-
-🔹 TRX-20 (USDT) Network:
-`TK2sRJYpftBMsBHThKVTCk8PyCFedtB61Q`
-
-🔹 bKash: `01954054330`
-🔹 Nagad: `01954054330`
-🔹 Rocket: `01954054330`
-
-👆 Tap any number/address to copy it.
-
-📸 After payment, send the payment screenshot here.
-Admin will verify and credit your balance.
-
-⚠️ Only send real payment screenshots. Fake attempts will be rejected."""
-
-
-PAYMENT_INFO_USD = """💳 Deposit / Payment Methods (USD)
-
-🔹 Binance Pay ID: `1234153609`
-🔹 BEP-20 (USDT) Network:
-`0x028dc4c629380a54805066b3ca95539eacd3b766`
 🔹 TRX-20 (USDT) Network:
 `TK2sRJYpftBMsBHThKVTCk8PyCFedtB61Q`
 
@@ -220,7 +199,6 @@ PAYMENT_INFO_AUTO = PAYMENT_INFO.replace(_EN_TAIL_OLD, _EN_TAIL_AUTO).replace(
     "💳 Deposit / Payment Methods\n\n"
     "⚡ bKash / Nagad / Rocket: AUTO deposit - balance is added automatically after you send the screenshot.\n"
     "🪙 Binance / USDT: verified manually by admin.\n\n", 1)
-
 
 
 def parse_line_to_columns(line):
@@ -392,78 +370,78 @@ BN_REGEX = [
 
 BN_PHRASES = [
     ("✨ *Welcome, ", "✨ *স্বাগতম, "),
-        ("Premium ID Store — fast, automatic delivery 24/7.", "প্রিমিয়াম আইডি স্টোর — দ্রুত, স্বয়ংক্রিয় ডেলিভারি ২৪/৭।"),
-        ("Use the menu below to buy, deposit or request support.", "কিনতে, ডিপোজিট করতে বা সাপোর্ট পেতে নিচের মেনু ব্যবহার করুন।"),
-        ("Your Chat ID:", "আপনার চ্যাট আইডি:"),
-        ("Your ID:", "আপনার আইডি:"),
-        ("Balance left:", "অবশিষ্ট ব্যালেন্স:"),
-        ("Your balance:", "আপনার ব্যালেন্স:"),
-        ("Balance:", "ব্যালেন্স:"),
-        ("*Your Wallet*", "*আপনার ওয়ালেট*"),
-        ("Status:", "স্ট্যাটাস:"),
-        ("Total purchased:", "মোট কেনা:"),
-        (" pcs", " পিস"),
-        ("🥉 Member", "🥉 মেম্বার"),
-        ("📭 No orders yet.", "📭 এখনও কোনো অর্ডার নেই।"),
-        ("*Order History* (last 10)", "*অর্ডার হিস্ট্রি* (শেষ ১০টি)"),
-        ("🏪 Shop is temporarily closed. Please try later.", "🏪 দোকান সাময়িকভাবে বন্ধ আছে। অনুগ্রহ করে পরে চেষ্টা করুন।"),
-        ("*Premium Store*", "*প্রিমিয়াম স্টোর*"),
-        ("Select an ID type:", "আইডির ধরন বেছে নিন:"),
-        ("👇 Tap a type below to buy your IDs", "👇 আইডি কিনতে নিচ থেকে একটি ধরন চাপুন"),
-        (" left |", " টি স্টকে |"),
-        ("📝 How many ", "📝 কতটি "),
-        (" IDs do you want?", " আইডি লাগবে?"),
-        ("Price: ", "দাম: "),
-        (" per piece", " প্রতি পিস"),
-        ("Send the number only:", "শুধু সংখ্যা পাঠান:"),
-        ("❌ Insufficient balance!", "❌ ব্যালেন্স অপর্যাপ্ত!"),
-        ("💳 Tap *Deposit* to top up.", "💳 টপ-আপ করতে *ডিপোজিট* চাপুন।"),
-        ("Required:", "প্রয়োজন:"),
-        ("🧾 *Order Summary*", "🧾 *অর্ডার সামারি*"),
-        ("Total:", "মোট:"),
-        ("Choose delivery format:", "ডেলিভারি ফরম্যাট বেছে নিন:"),
-        ("❌ Please send a valid number:", "❌ সঠিক সংখ্যা পাঠান:"),
-        ("⚠️ Please use the buttons above.", "⚠️ অনুগ্রহ করে উপরের বাটনগুলো ব্যবহার করুন।"),
-        ("❌ Cancelled.", "❌ বাতিল করা হয়েছে।"),
-        ("❌ I didn't understand. Send /start.", "❌ বুঝতে পারিনি। /start পাঠান।"),
-        ("✅ Order Confirmed", "✅ অর্ডার নিশ্চিত হয়েছে"),
-        ("Order:", "অর্ডার:"),
-        ("Paid:", "পরিশোধ:"),
-        ("Format:", "ফরম্যাট:"),
-        ("↩️ Your balance has been refunded.", "↩️ আপনার ব্যালেন্স ফেরত দেওয়া হয়েছে।"),
-        ("❌ Error: ", "❌ ত্রুটি: "),
-        ("✅ Deposit screenshot received!", "✅ ডিপোজিট স্ক্রিনশট পেয়েছি!"),
-        ("Deposit ID:", "ডিপোজিট আইডি:"),
-        ("Admin will verify and add balance shortly.", "অ্যাডমিন যাচাই করে শীঘ্রই ব্যালেন্স যোগ করবে।"),
-        ("✅ Deposit approved!", "✅ ডিপোজিট অনুমোদিত হয়েছে!"),
-        ("Please contact admin for details.", "বিস্তারিত জানতে অ্যাডমিনের সাথে যোগাযোগ করুন।"),
-        ("❌ Deposit save error.", "❌ ডিপোজিট সেভ করতে সমস্যা হয়েছে।"),
-        ("Admin has been notified. Please contact @Jihad777.", "অ্যাডমিনকে জানানো হয়েছে। অনুগ্রহ করে @Jihad777-এর সাথে যোগাযোগ করুন।"),
-        ("📞 Contact admin: @Jihad777", "📞 অ্যাডমিনের সাথে যোগাযোগ: @Jihad777"),
-        ("Please share your deposit screenshot + Chat ID.", "অনুগ্রহ করে আপনার ডিপোজিট স্ক্রিনশট ও চ্যাট আইডি শেয়ার করুন।"),
-        ("🔁 *Replacement Request*", "🔁 *রিপ্লেসমেন্ট রিকোয়েস্ট*"),
-        ("Send in one message:", "এক মেসেজে পাঠান:"),
-        ("+ problem (one ID per line).", "+ সমস্যা (প্রতি লাইনে একটি আইডি)।"),
-        ("Send ❌ Cancel to abort.", "বাতিল করতে ❌ Cancel পাঠান।"),
-        ("Admin will review it shortly.", "অ্যাডমিন শীঘ্রই দেখবে।"),
-        ("📩 *Message from Admin*", "📩 *অ্যাডমিনের বার্তা*"),
-        ("🚫 You are blocked. Contact @Jihad777.", "🚫 আপনাকে ব্লক করা হয়েছে। @Jihad777-এর সাথে যোগাযোগ করুন।"),
-        ("🆕 New Stock Added!", "🆕 নতুন স্টক যোগ হয়েছে!"),
-        ("IDs (now ", "টি আইডি (এখন "),
-        (" available)", " টি স্টকে)"),
-        ("🔎 Screenshot received! Verifying your payment automatically...", "🔎 স্ক্রিনশট পেয়েছি! আপনার পেমেন্ট স্বয়ংক্রিয়ভাবে যাচাই করা হচ্ছে..."),
-        ("This takes a few seconds.", "কয়েক সেকেন্ড সময় লাগবে।"),
-        ("✅ Deposit approved automatically!", "✅ ডিপোজিট স্বয়ংক্রিয়ভাবে অনুমোদিত হয়েছে!"),
-        ("Transaction ID:", "ট্রানজেকশন আইডি:"),
-        ("⏳ Could not verify automatically. Sent to admin for manual review.", "⏳ স্বয়ংক্রিয়ভাবে যাচাই করা যায়নি। অ্যাডমিনের কাছে ম্যানুয়াল রিভিউয়ের জন্য পাঠানো হয়েছে।"),
-        ("You will be notified shortly.", "শীঘ্রই আপনাকে জানানো হবে।"),
-        ("❌ This Transaction ID was already used. Duplicate deposits are not allowed.", "❌ এই ট্রানজেকশন আইডি আগেই ব্যবহার করা হয়েছে। ডুপ্লিকেট ডিপোজিট গ্রহণযোগ্য নয়।"),
-        ("⏳ This Transaction ID is already submitted and waiting for admin review.", "⏳ এই ট্রানজেকশন আইডি আগেই জমা হয়েছে এবং অ্যাডমিনের রিভিউয়ের অপেক্ষায় আছে।"),
-        ("⚠️ Your deposit was reversed by admin.", "⚠️ আপনার ডিপোজিট অ্যাডমিন বাতিল করেছেন।"),
-        ("🛒 Tap Buy IDs to order now.", "🛒 এখনই অর্ডার করতে \"আইডি কিনুন\" চাপুন।"),
-        ("📢 Announcement", "📢 ঘোষণা"),
-        ("🌐 Language set to English.", "🌐 ভাষা বাংলা করা হয়েছে।"),
-    ]
+    ("Premium ID Store — fast, automatic delivery 24/7.", "প্রিমিয়াম আইডি স্টোর — দ্রুত, স্বয়ংক্রিয় ডেলিভারি ২৪/৭।"),
+    ("Use the menu below to buy, deposit or request support.", "কিনতে, ডিপোজিট করতে বা সাপোর্ট পেতে নিচের মেনু ব্যবহার করুন।"),
+    ("Your Chat ID:", "আপনার চ্যাট আইডি:"),
+    ("Your ID:", "আপনার আইডি:"),
+    ("Balance left:", "অবশিষ্ট ব্যালেন্স:"),
+    ("Your balance:", "আপনার ব্যালেন্স:"),
+    ("Balance:", "ব্যালেন্স:"),
+    ("*Your Wallet*", "*আপনার ওয়ালেট*"),
+    ("Status:", "স্ট্যাটাস:"),
+    ("Total purchased:", "মোট কেনা:"),
+    (" pcs", " পিস"),
+    ("🥉 Member", "🥉 মেম্বার"),
+    ("📭 No orders yet.", "📭 এখনও কোনো অর্ডার নেই।"),
+    ("*Order History* (last 10)", "*অর্ডার হিস্ট্রি* (শেষ ১০টি)"),
+    ("🏪 Shop is temporarily closed. Please try later.", "🏪 দোকান সাময়িকভাবে বন্ধ আছে। অনুগ্রহ করে পরে চেষ্টা করুন।"),
+    ("*Premium Store*", "*প্রিমিয়াম স্টোর*"),
+    ("Select an ID type:", "আইডির ধরন বেছে নিন:"),
+    ("👇 Tap a type below to buy your IDs", "👇 আইডি কিনতে নিচ থেকে একটি ধরন চাপুন"),
+    (" left |", " টি স্টকে |"),
+    ("📝 How many ", "📝 কতটি "),
+    (" IDs do you want?", " আইডি লাগবে?"),
+    ("Price: ", "দাম: "),
+    (" per piece", " প্রতি পিস"),
+    ("Send the number only:", "শুধু সংখ্যা পাঠান:"),
+    ("❌ Insufficient balance!", "❌ ব্যালেন্স অপর্যাপ্ত!"),
+    ("💳 Tap *Deposit* to top up.", "💳 টপ-আপ করতে *ডিপোজিট* চাপুন।"),
+    ("Required:", "প্রয়োজন:"),
+    ("🧾 *Order Summary*", "🧾 *অর্ডার সামারি*"),
+    ("Total:", "মোট:"),
+    ("Choose delivery format:", "ডেলিভারি ফরম্যাট বেছে নিন:"),
+    ("❌ Please send a valid number:", "❌ সঠিক সংখ্যা পাঠান:"),
+    ("⚠️ Please use the buttons above.", "⚠️ অনুগ্রহ করে উপরের বাটনগুলো ব্যবহার করুন।"),
+    ("❌ Cancelled.", "❌ বাতিল করা হয়েছে।"),
+    ("❌ I didn't understand. Send /start.", "❌ বুঝতে পারিনি। /start পাঠান।"),
+    ("✅ Order Confirmed", "✅ অর্ডার নিশ্চিত হয়েছে"),
+    ("Order:", "অর্ডার:"),
+    ("Paid:", "পরিশোধ:"),
+    ("Format:", "ফরম্যাট:"),
+    ("↩️ Your balance has been refunded.", "↩️ আপনার ব্যালেন্স ফেরত দেওয়া হয়েছে।"),
+    ("❌ Error: ", "❌ ত্রুটি: "),
+    ("✅ Deposit screenshot received!", "✅ ডিপোজিট স্ক্রিনশট পেয়েছি!"),
+    ("Deposit ID:", "ডিপোজিট আইডি:"),
+    ("Admin will verify and add balance shortly.", "অ্যাডমিন যাচাই করে শীঘ্রই ব্যালেন্স যোগ করবে।"),
+    ("✅ Deposit approved!", "✅ ডিপোজিট অনুমোদিত হয়েছে!"),
+    ("Please contact admin for details.", "বিস্তারিত জানতে অ্যাডমিনের সাথে যোগাযোগ করুন।"),
+    ("❌ Deposit save error.", "❌ ডিপোজিট সেভ করতে সমস্যা হয়েছে।"),
+    ("Admin has been notified. Please contact @Jihad777.", "অ্যাডমিনকে জানানো হয়েছে। অনুগ্রহ করে @Jihad777-এর সাথে যোগাযোগ করুন।"),
+    ("📞 Contact admin: @Jihad777", "📞 অ্যাডমিনের সাথে যোগাযোগ: @Jihad777"),
+    ("Please share your deposit screenshot + Chat ID.", "অনুগ্রহ করে আপনার ডিপোজিট স্ক্রিনশট ও চ্যাট আইডি শেয়ার করুন।"),
+    ("🔁 *Replacement Request*", "🔁 *রিপ্লেসমেন্ট রিকোয়েস্ট*"),
+    ("Send in one message:", "এক মেসেজে পাঠান:"),
+    ("+ problem (one ID per line).", "+ সমস্যা (প্রতি লাইনে একটি আইডি)।"),
+    ("Send ❌ Cancel to abort.", "বাতিল করতে ❌ Cancel পাঠান।"),
+    ("Admin will review it shortly.", "অ্যাডমিন শীঘ্রই দেখবে।"),
+    ("📩 *Message from Admin*", "📩 *অ্যাডমিনের বার্তা*"),
+    ("🚫 You are blocked. Contact @Jihad777.", "🚫 আপনাকে ব্লক করা হয়েছে। @Jihad777-এর সাথে যোগাযোগ করুন।"),
+    ("🆕 New Stock Added!", "🆕 নতুন স্টক যোগ হয়েছে!"),
+    ("IDs (now ", "টি আইডি (এখন "),
+    (" available)", " টি স্টকে)"),
+    ("🔎 Screenshot received! Verifying your payment automatically...", "🔎 স্ক্রিনশট পেয়েছি! আপনার পেমেন্ট স্বয়ংক্রিয়ভাবে যাচাই করা হচ্ছে..."),
+    ("This takes a few seconds.", "কয়েক সেকেন্ড সময় লাগবে।"),
+    ("✅ Deposit approved automatically!", "✅ ডিপোজিট স্বয়ংক্রিয়ভাবে অনুমোদিত হয়েছে!"),
+    ("Transaction ID:", "ট্রানজেকশন আইডি:"),
+    ("⏳ Could not verify automatically. Sent to admin for manual review.", "⏳ স্বয়ংক্রিয়ভাবে যাচাই করা যায়নি। অ্যাডমিনের কাছে ম্যানুয়াল রিভিউয়ের জন্য পাঠানো হয়েছে।"),
+    ("You will be notified shortly.", "শীঘ্রই আপনাকে জানানো হবে।"),
+    ("❌ This Transaction ID was already used. Duplicate deposits are not allowed.", "❌ এই ট্রানজেকশন আইডি আগেই ব্যবহার করা হয়েছে। ডুপ্লিকেট ডিপোজিট গ্রহণযোগ্য নয়।"),
+    ("⏳ This Transaction ID is already submitted and waiting for admin review.", "⏳ এই ট্রানজেকশন আইডি আগেই জমা হয়েছে এবং অ্যাডমিনের রিভিউয়ের অপেক্ষায় আছে।"),
+    ("⚠️ Your deposit was reversed by admin.", "⚠️ আপনার ডিপোজিট অ্যাডমিন বাতিল করেছেন।"),
+    ("🛒 Tap Buy IDs to order now.", "🛒 এখনই অর্ডার করতে \"আইডি কিনুন\" চাপুন।"),
+    ("📢 Announcement", "📢 ঘোষণা"),
+    ("🌐 Language set to English.", "🌐 ভাষা বাংলা করা হয়েছে।"),
+]
 BN_PHRASES.sort(key=lambda p: len(p[0]), reverse=True)
 _BN_REGEX_C = [(re.compile(a), b) for a, b in BN_REGEX]
 
