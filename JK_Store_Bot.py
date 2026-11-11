@@ -44,7 +44,8 @@ import logging
 import tempfile
 import threading
 import traceback
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+import base64
 
 import requests
 import pandas as pd
@@ -80,6 +81,10 @@ _sh = logging.StreamHandler(sys.stdout)
 _sh.setFormatter(_fmt)
 _sh.setLevel(logging.INFO)
 logger.addHandler(_sh)
+
+BD_TZ = timezone(timedelta(hours=6))          # Bangladesh time (no DST) - server may be UTC
+DEFAULT_AUTO_NUMBERS = "01954054330"          # receiving bKash/Nagad/Rocket numbers (editable in panel)
+OCR_MODEL = os.environ.get("OCR_MODEL", "claude-sonnet-5-5")
 
 # ============================================================
 # Per-user Topic Chat (v31) - background mirror worker
@@ -170,6 +175,30 @@ PAYMENT_INFO_USD = """💳 Deposit / Payment Methods (USD)
 Admin will verify and credit your balance in USD.
 
 ⚠️ Only send real payment screenshots. Fake attempts will be rejected."""
+
+
+_EN_TAIL_OLD = ("📸 After payment, send the payment screenshot here.\n"
+                "Admin will verify and credit your balance.\n\n"
+                "⚠️ Only send real payment screenshots. Fake attempts will be rejected.")
+_EN_TAIL_AUTO = ("⚡ HOW AUTO DEPOSIT WORKS (bKash / Nagad / Rocket)\n"
+                 "1️⃣ Send money to the number above.\n"
+                 "2️⃣ Within {MIN} minutes, send the full payment screenshot here.\n"
+                 "3️⃣ Write the amount you sent as the photo caption (example: 500).\n"
+                 "✅ If everything matches, your balance is added automatically within seconds.\n"
+                 "⏳ If it can't be verified automatically, the admin will check it manually.\n\n"
+                 "📌 Important:\n"
+                 "• The screenshot must clearly show the Transaction ID, amount and time "
+                 "(full screen, not cropped).\n"
+                 "• Screenshots older than {MIN} minutes go to manual review.\n"
+                 "• One Transaction ID can be used only once.\n"
+                 "• Binance / USDT payments are verified manually by the admin.\n\n"
+                 "⚠️ Only send real payment screenshots. Fake attempts will be rejected.")
+assert _EN_TAIL_OLD in PAYMENT_INFO
+PAYMENT_INFO_AUTO = PAYMENT_INFO.replace(_EN_TAIL_OLD, _EN_TAIL_AUTO).replace(
+    "💳 Deposit / Payment Methods\n\n",
+    "💳 Deposit / Payment Methods\n\n"
+    "⚡ bKash / Nagad / Rocket: AUTO deposit - balance is added automatically after you send the screenshot.\n"
+    "🪙 Binance / USDT: verified manually by admin.\n\n", 1)
 
 
 def parse_line_to_columns(line):
@@ -305,6 +334,29 @@ BN_PAYMENT_USD = """💳 ডিপোজিট / পেমেন্ট মাধ
 
 ⚠️ শুধু আসল পেমেন্টের স্ক্রিনশট পাঠান। ভুয়া চেষ্টা বাতিল করা হবে।"""
 
+_BN_TAIL_OLD = ("📸 পেমেন্টের পর এখানে পেমেন্টের স্ক্রিনশট পাঠান।\n"
+                "অ্যাডমিন যাচাই করে আপনার ব্যালেন্সে যোগ করবে।\n\n"
+                "⚠️ শুধু আসল পেমেন্টের স্ক্রিনশট পাঠান। ভুয়া চেষ্টা বাতিল করা হবে।")
+_BN_TAIL_AUTO = ("⚡ অটো ডিপোজিট কীভাবে কাজ করে (bKash / Nagad / Rocket)\n"
+                 "১️⃣ উপরের নম্বরে টাকা পাঠান (Send Money)।\n"
+                 "২️⃣ {MIN} মিনিটের মধ্যে পুরো পেমেন্ট স্ক্রিনশট এখানে পাঠান।\n"
+                 "৩️⃣ ছবির ক্যাপশনে যত টাকা পাঠিয়েছেন সেটা লিখুন (যেমন: 500)।\n"
+                 "✅ সব মিলে গেলে কয়েক সেকেন্ডের মধ্যে আপনার ব্যালেন্সে স্বয়ংক্রিয়ভাবে যোগ হবে।\n"
+                 "⏳ স্বয়ংক্রিয়ভাবে যাচাই না হলে অ্যাডমিন ম্যানুয়ালি যাচাই করবে।\n\n"
+                 "📌 গুরুত্বপূর্ণ:\n"
+                 "• স্ক্রিনশটে ট্রানজেকশন আইডি, টাকার পরিমাণ ও সময় পরিষ্কার দেখা যেতে হবে "
+                 "(পুরো স্ক্রিন, কাটা নয়)।\n"
+                 "• {MIN} মিনিটের পুরোনো স্ক্রিনশট ম্যানুয়াল রিভিউয়ে যাবে।\n"
+                 "• একটা ট্রানজেকশন আইডি শুধু একবারই ব্যবহার করা যাবে।\n"
+                 "• Binance / USDT পেমেন্ট অ্যাডমিন ম্যানুয়ালি যাচাই করবে।\n\n"
+                 "⚠️ শুধু আসল পেমেন্টের স্ক্রিনশট পাঠান। ভুয়া চেষ্টা বাতিল করা হবে।")
+assert _BN_TAIL_OLD in BN_PAYMENT
+BN_PAYMENT_AUTO = BN_PAYMENT.replace(_BN_TAIL_OLD, _BN_TAIL_AUTO).replace(
+    "💳 ডিপোজিট / পেমেন্ট মাধ্যম\n\n",
+    "💳 ডিপোজিট / পেমেন্ট মাধ্যম\n\n"
+    "⚡ bKash / Nagad / Rocket: অটো ডিপোজিট - স্ক্রিনশট পাঠালে ব্যালেন্স নিজে থেকে যোগ হবে।\n"
+    "🪙 Binance / USDT: অ্যাডমিন ম্যানুয়ালি যাচাই করবে।\n\n", 1)
+
 REGION_BD_BTN = "🇧🇩 Bangladesh / বাংলাদেশ"
 REGION_OTHER_BTN = "🌍 Other Country (USD)"
 
@@ -377,6 +429,15 @@ BN_PHRASES = [
     ("🆕 New Stock Added!", "🆕 নতুন স্টক যোগ হয়েছে!"),
     ("IDs (now ", "টি আইডি (এখন "),
     (" available)", " টি স্টকে)"),
+    ("🔎 Screenshot received! Verifying your payment automatically...", "🔎 স্ক্রিনশট পেয়েছি! আপনার পেমেন্ট স্বয়ংক্রিয়ভাবে যাচাই করা হচ্ছে..."),
+    ("This takes a few seconds.", "কয়েক সেকেন্ড সময় লাগবে।"),
+    ("✅ Deposit approved automatically!", "✅ ডিপোজিট স্বয়ংক্রিয়ভাবে অনুমোদিত হয়েছে!"),
+    ("Transaction ID:", "ট্রানজেকশন আইডি:"),
+    ("⏳ Could not verify automatically. Sent to admin for manual review.", "⏳ স্বয়ংক্রিয়ভাবে যাচাই করা যায়নি। অ্যাডমিনের কাছে ম্যানুয়াল রিভিউয়ের জন্য পাঠানো হয়েছে।"),
+    ("You will be notified shortly.", "শীঘ্রই আপনাকে জানানো হবে।"),
+    ("❌ This Transaction ID was already used. Duplicate deposits are not allowed.", "❌ এই ট্রানজেকশন আইডি আগেই ব্যবহার করা হয়েছে। ডুপ্লিকেট ডিপোজিট গ্রহণযোগ্য নয়।"),
+    ("⏳ This Transaction ID is already submitted and waiting for admin review.", "⏳ এই ট্রানজেকশন আইডি আগেই জমা হয়েছে এবং অ্যাডমিনের রিভিউয়ের অপেক্ষায় আছে।"),
+    ("⚠️ Your deposit was reversed by admin.", "⚠️ আপনার ডিপোজিট অ্যাডমিন বাতিল করেছেন।"),
     ("🛒 Tap Buy IDs to order now.", "🛒 এখনই অর্ডার করতে \"আইডি কিনুন\" চাপুন।"),
     ("📢 Announcement", "📢 ঘোষণা"),
     ("🌐 Language set to English.", "🌐 ভাষা বাংলা করা হয়েছে।"),
@@ -554,6 +615,13 @@ class CustomerDB:
             conn.execute("INSERT OR IGNORE INTO settings(key, value) VALUES('price_newid', '12')")
             conn.execute("INSERT OR IGNORE INTO settings(key, value) VALUES('price_newid_usd', '0.15')")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_tx_cust ON transactions(customer_id)")
+            conn.execute("""CREATE TABLE IF NOT EXISTS deposit_txns(
+                trx_id TEXT PRIMARY KEY,
+                deposit_id INTEGER,
+                chat_id TEXT,
+                amount REAL DEFAULT 0,
+                status TEXT DEFAULT 'pending',
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP)""")
 
     # -------- PRICES --------
     def get_price(self, id_type, currency='BDT'):
@@ -873,11 +941,43 @@ class CustomerDB:
                          (float(amount), currency.upper(), dep_id))
             conn.execute("UPDATE bot_users SET balance = balance + ?, currency=? WHERE chat_id=?",
                          (float(amount), currency.upper(), chat_id))
+            conn.execute("UPDATE deposit_txns SET status='approved' WHERE deposit_id=?", (dep_id,))
             return True
 
     def reject_deposit(self, dep_id, note=""):
         with self._lock, sqlite3.connect(self.db_path) as conn:
             conn.execute("UPDATE deposits SET status='rejected', note=? WHERE id=?", (note, dep_id))
+            conn.execute("DELETE FROM deposit_txns WHERE deposit_id=?", (dep_id,))   # TrxID free again
+
+    # -------- AUTO-DEPOSIT helpers --------
+    def reserve_trx(self, trx_id, dep_id, chat_id, amount):
+        """Atomically claim a Transaction ID. Returns (True, 'pending', dep_id) or
+        (False, existing_status, existing_deposit_id) when it was used before."""
+        with self._lock, sqlite3.connect(self.db_path) as conn:
+            row = conn.execute("SELECT status, deposit_id FROM deposit_txns WHERE trx_id=?",
+                               (trx_id,)).fetchone()
+            if row:
+                return False, row[0], row[1]
+            conn.execute("INSERT INTO deposit_txns(trx_id, deposit_id, chat_id, amount, status) "
+                         "VALUES(?,?,?,?, 'pending')", (trx_id, dep_id, chat_id, float(amount)))
+            return True, "pending", dep_id
+
+    def set_deposit_note(self, dep_id, note):
+        with self._lock, sqlite3.connect(self.db_path) as conn:
+            conn.execute("UPDATE deposits SET note=? WHERE id=?", (note, dep_id))
+
+    def undo_deposit(self, dep_id):
+        """Reverse an approved deposit (takes balance back), keep its TrxID blocked.
+        Returns (chat_id, amount, currency, not_recovered) or None."""
+        with self._lock, sqlite3.connect(self.db_path) as conn:
+            row = conn.execute("SELECT chat_id, COALESCE(amount,0), COALESCE(currency,'BDT'), status "
+                               "FROM deposits WHERE id=?", (dep_id,)).fetchone()
+            if not row or row[3] != "approved":
+                return None
+            short = self._reverse_credit(conn, row[0], row[1])
+            conn.execute("UPDATE deposits SET status='rejected', note='Reversed by admin' WHERE id=?", (dep_id,))
+            conn.execute("UPDATE deposit_txns SET status='blocked' WHERE deposit_id=?", (dep_id,))
+            return (row[0], row[1], row[2], short)
 
     def get_pending_deposits(self):
         with sqlite3.connect(self.db_path) as conn:
@@ -1194,6 +1294,10 @@ class BotApp:
             n_users = len(self.customer_db.list_users())
             n_stock = sum(self._cp_count(k) for k in self._CP_TYPES)
             logger.info(f"📂 Data folder: {APP_FOLDER} | users: {n_users} | stock IDs: {n_stock}")
+            logger.info(self._auto_status_text())
+            if "NOT ACTIVE" in self._auto_status_text():
+                self._send_text_direct(token, cid, "⚠️ " + self._auto_status_text()
+                                       + "\nAdd GEMINI_API_KEY in Railway -> Variables, then redeploy.")
             if n_users == 0:
                 self._send_text_direct(
                     token, cid,
@@ -1379,6 +1483,21 @@ class BotApp:
                                        f"Deposit #{dep_id} → {user_chat}")
             return
 
+        if data.startswith("dep_u_") and is_admin:
+            dep_id = int(data.split("_")[2])
+            res = self.customer_db.undo_deposit(dep_id)
+            if res:
+                u_chat, u_amt, u_cur, short = res
+                self.send_message(token, u_chat, "⚠️ Your deposit was reversed by admin.")
+                extra = f"\n(user had already spent {short:g}, not recoverable)" if short else ""
+                self._edit_admin_photo(token, chat_id, message_id,
+                                       f"↩️ UNDONE: Deposit #{dep_id} ({u_amt:g} {u_cur}) taken back from {u_chat}."
+                                       f"\nTransaction ID blocked.{extra}")
+            else:
+                self._edit_admin_photo(token, chat_id, message_id,
+                                       f"ℹ️ Deposit #{dep_id} is not in approved state (nothing to undo).")
+            return
+
         if data.startswith("dep_r_") and is_admin:
             dep_id = int(data.split("_")[2])
             self.customer_db.reject_deposit(dep_id, "Rejected by admin")
@@ -1468,49 +1587,32 @@ class BotApp:
             cur = user_info[3] if user_info else "BDT"
             sym = "৳" if cur == "BDT" else "$"
 
-            self.send_message(token, chat_id,
-                              f"✅ Deposit screenshot received!\n\n"
-                              f"Deposit ID: #{dep_id}\n"
-                              f"Admin will verify and add balance shortly.\n\n"
-                              f"Your Chat ID: {chat_id}")
+            auto_mode = self._auto_enabled() and cur == "BDT"
+            if auto_mode:
+                self.send_message(token, chat_id,
+                                  f"🔎 Screenshot received! Verifying your payment automatically...\n\n"
+                                  f"Deposit ID: #{dep_id}\n"
+                                  f"This takes a few seconds.")
+            else:
+                self.send_message(token, chat_id,
+                                  f"✅ Deposit screenshot received!\n\n"
+                                  f"Deposit ID: #{dep_id}\n"
+                                  f"Admin will verify and add balance shortly.\n\n"
+                                  f"Your Chat ID: {chat_id}")
 
             if not master_id:
                 logger.error("[DEPOSIT ALERT] Master Chat ID is EMPTY!")
                 return
 
-            admin_caption = (
-                f"💰 DEPOSIT REQUEST\n"
-                f"━━━━━━━━━━━━━━━━━━━━━\n"
-                f"🆔 Deposit ID: #{dep_id}\n"
-                f"👤 Name: {name}\n"
-                f"🏷️ Username: @{uname if uname else 'N/A'}\n"
-                f"💬 Chat ID: {chat_id}\n"
-                f"💳 Current Balance: {sym}{cur_bal:.2f} {cur}\n"
-                f"🕒 Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
-                f"━━━━━━━━━━━━━━━━━━━━━\n"
-                f"Use buttons below, or:\n"
-                f"/approve {dep_id} <amt> <BDT|USD>\n"
-                f"/reject {dep_id}"
-            )
+            if auto_mode:
+                threading.Thread(
+                    target=self._auto_deposit_job,
+                    args=(token, dep_id, chat_id, name, uname, file_id,
+                          msg.get("caption") or "", msg.get("date") or int(time.time())),
+                    daemon=True).start()
+                return
 
-            admin_kb = {"inline_keyboard": [
-                [{"text": "✅ 100৳", "callback_data": f"dep_a_{dep_id}_100_BDT"},
-                 {"text": "✅ 500৳", "callback_data": f"dep_a_{dep_id}_500_BDT"},
-                 {"text": "✅ 1000৳", "callback_data": f"dep_a_{dep_id}_1000_BDT"}],
-                [{"text": "💵 $5", "callback_data": f"dep_a_{dep_id}_5_USD"},
-                 {"text": "💵 $10", "callback_data": f"dep_a_{dep_id}_10_USD"},
-                 {"text": "💵 $50", "callback_data": f"dep_a_{dep_id}_50_USD"}],
-                [{"text": "✏️ Custom Amount / Currency", "callback_data": f"dep_custom_{dep_id}"}],
-                [{"text": "❌ Reject", "callback_data": f"dep_r_{dep_id}"}]
-            ]}
-
-            self.send_photo(token, master_id, file_id, admin_caption, admin_kb)
-            self._notify_admin(token,
-                               f"💰 New Deposit Request\n━━━━━━━━━━━━━━\n🆔 Deposit: #{dep_id}\n"
-                               f"👤 {name}" + (f" (@{uname})" if uname else "") + f"\n💬 Chat ID: {chat_id}\n"
-                               f"🕒 {datetime.now().strftime('%Y-%m-%d %H:%M')}",
-                               master=False)
-            logger.info(f"[DEPOSIT ALERT] Sent to master_id={master_id} for #{dep_id}")
+            self._send_admin_deposit_card(token, master_id, dep_id, name, uname, chat_id, file_id)
             return
 
         # ---------- DOCUMENT uploads ----------
@@ -1578,12 +1680,14 @@ class BotApp:
             return
         if is_admin and text.startswith("/pay"):
             arg = text.split()[1].lower() if len(text.split()) > 1 else ""
-            table = {"bn": BN_PAYMENT, "en": PAYMENT_INFO, "usd": PAYMENT_INFO_USD, "usdbn": BN_PAYMENT_USD}
+            table = {"bn": BN_PAYMENT, "en": PAYMENT_INFO, "usd": PAYMENT_INFO_USD, "usdbn": BN_PAYMENT_USD,
+                     "autobn": self._deposit_info_text(chat_id, "bn") if self._auto_enabled() else BN_PAYMENT_AUTO.replace("{MIN}", "5"),
+                     "autoen": self._deposit_info_text(chat_id, "en") if self._auto_enabled() else PAYMENT_INFO_AUTO.replace("{MIN}", "5")}
             if arg in table:
                 self._send_exact(token, chat_id, table[arg])
             else:
                 self.send_message(token, chat_id,
-                                  "Usage: /pay bn | en | usd | usdbn\n"
+                                  "Usage: /pay bn | en | usd | usdbn | autobn | autoen\n"
                                   "bn/en = full (BDT + crypto), usd/usdbn = crypto only (foreign buyers)",
                                   reply_markup=kb)
             return
@@ -1732,7 +1836,8 @@ class BotApp:
                               "/find <id> — user profile\n"
                               "/reply <id> <text> — message a user\n"
                               "/backup — DB + stock backup (auto every 24h)\n"
-                              "/restore — load old customers.db / stock json")
+                              "/restore — load old customers.db / stock json\n"
+                              "⚙️ Control Panel → 🤖 Auto Deposit — auto-approve settings")
             self.send_message(token, chat_id, help_text, reply_markup=kb)
             return
 
@@ -1765,7 +1870,7 @@ class BotApp:
             if not is_admin and u_dep and u_dep[3] == "USD":
                 self.send_message(token, chat_id, PAYMENT_INFO_USD, reply_markup=kb)
             else:
-                self.send_message(token, chat_id, PAYMENT_INFO, reply_markup=kb)
+                self.send_message(token, chat_id, self._deposit_info_text(chat_id), reply_markup=kb)
             return
 
         if text == "📞 Support":
@@ -2005,7 +2110,8 @@ class BotApp:
                                   f"Your Chat ID: {chat_id}\n"
                                   f"Match: {is_admin}\n"
                                   f"Your Balance: {bal:.2f} {cur}\n"
-                                  f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+                                  f"Time (BD): {datetime.now(BD_TZ).strftime('%Y-%m-%d %H:%M:%S')}\n"
+                                  f"{self._auto_status_text()}")
                 return
             if text.startswith("/approve "):
                 parts = text.split()
@@ -2548,6 +2654,346 @@ class BotApp:
             os.remove(stmp)
         except Exception as e:
             logger.error(f"[backup] {e}")
+
+    # ========================================================
+    # AUTO DEPOSIT  (screenshot -> OCR -> checks -> approve)
+    # Every check must pass, otherwise the deposit goes to the admin
+    # for manual approval exactly like before.
+    # ========================================================
+    def _auto_enabled(self):
+        try:
+            return (self.customer_db.get_setting("auto_dep", "1") == "1"
+                    and self._ocr_provider() is not None)
+        except Exception:
+            return False
+
+    def _deposit_info_text(self, chat_id, lang=None):
+        """BDT deposit instructions: auto-deposit version when auto is active, else the old text."""
+        lang = lang or self._get_lang(chat_id)
+        if not self._auto_enabled():
+            return BN_PAYMENT if lang == "bn" else PAYMENT_INFO
+        try:
+            mins = f"{float(self.customer_db.get_setting('auto_window_min', '5')):g}"
+        except ValueError:
+            mins = "5"
+        base = BN_PAYMENT_AUTO if lang == "bn" else PAYMENT_INFO_AUTO
+        return base.replace("{MIN}", mins)
+
+    def _auto_status_text(self):
+        on = self.customer_db.get_setting("auto_dep", "1") == "1"
+        prov = self._ocr_provider()
+        if on and prov:
+            mdl = (os.environ.get("GEMINI_MODEL", "").strip() or "gemini-2.5-flash") if prov == "gemini" else OCR_MODEL
+            return f"🤖 Auto deposit: ON ({prov}, model {mdl})"
+        if on and not prov:
+            return ("🤖 Auto deposit: NOT ACTIVE - GEMINI_API_KEY (or ANTHROPIC_API_KEY) is missing "
+                    "(every deposit needs manual approval)")
+        return "🤖 Auto deposit: OFF (switched off in Control Panel)"
+
+    def _download_tg_file(self, token, file_id):
+        res = self.tg_session.get(
+            f"https://api.telegram.org/bot{token}/getFile?file_id={file_id}", timeout=15).json()
+        if not res.get("ok"):
+            raise RuntimeError(f"getFile failed: {res.get('description')}")
+        return self.tg_session.get(
+            f"https://api.telegram.org/file/bot{token}/{res['result']['file_path']}", timeout=60).content
+
+    def _ocr_provider(self):
+        """'gemini' | 'anthropic' | None  (OCR_PROVIDER env can force one)."""
+        gem = bool(os.environ.get("GEMINI_API_KEY", "").strip())
+        ant = bool(os.environ.get("ANTHROPIC_API_KEY", "").strip())
+        want = os.environ.get("OCR_PROVIDER", "").strip().lower()
+        if want == "gemini" and gem:
+            return "gemini"
+        if want == "anthropic" and ant:
+            return "anthropic"
+        return "anthropic" if ant else ("gemini" if gem else None)
+
+    def _ocr_prompt(self):
+        now_bd = datetime.now(BD_TZ).strftime("%Y-%m-%d %H:%M")
+        return (
+            "You read mobile-money payment screenshots from Bangladesh (bKash, Nagad, Rocket, Upay...). "
+            f"Current Bangladesh date/time: {now_bd}. Dates on these screenshots are usually day-first "
+            "(10/11/26 = 10 Nov 2026). Times are Bangladesh local time.\n"
+            "The screenshot may be in ENGLISH or BENGALI (বাংলা), e.g. 'টাকা/পরিমাণ/খরচ/সর্বমোট/ট্রানজেকশন আইডি/"
+            "সময়/চার্জ/সেন্ড মানি/সফল'. Read both. ALWAYS answer with English (0-9) digits and 24-hour time: convert "
+            "Bengali digits ০১২৩৪৫৬৭৮৯ to 0-9, and Bengali time words (ভোর/সকাল = AM, দুপুর/বিকাল/সন্ধ্যা/রাত = PM) "
+            "and Bengali month names (জানুয়ারি, ফেব্রুয়ারি, মার্চ, এপ্রিল, মে, জুন, জুলাই, আগস্ট, সেপ্টেম্বর, অক্টোবর, "
+            "নভেম্বর/নভে, ডিসেম্বর) into the JSON format below. The Transaction ID stays exactly as printed "
+            "(Latin letters/digits).\n"
+            "Reply with ONE JSON object only, no other text, with keys:\n"
+            '{"is_payment_screenshot": bool, "status_success": bool, '
+            '"provider": "bkash|nagad|rocket|upay|other", '
+            '"amount": number|null, "charge": number|null, "total": number|null, '
+            '"trx_id": string|null, "recipient_number": string|null, '
+            '"datetime": "YYYY-MM-DD HH:MM" (24-hour)|null, '
+            '"confidence": "high|medium|low", "looks_edited": bool, "notes": string}\n'
+            "Rules: 'amount' is the money the RECIPIENT receives, WITHOUT the fee. If the screen shows "
+            "Amount, Charge and Total (e.g. 245 + 5 = 250, or Bengali পরিমাণ/খরচ/সর্বমোট 100 + 0.85 = 100.85), "
+            "amount=245, charge=5, total=250. Never put the "
+            "Total into 'amount'. If only one figure is shown, put it in 'amount'. "
+            "'trx_id' is the Transaction ID exactly as printed (letters+digits, no spaces). "
+            "'recipient_number' is the number money was sent to, digits only. "
+            "Set looks_edited=true only if you see clear signs of editing (mismatched fonts, "
+            "misaligned text, pasted regions). Set confidence=low if any key field is blurry or cropped. "
+            "Use null for anything not visible - never guess.")
+
+    @staticmethod
+    def _parse_json_reply(txt):
+        txt = (txt or "").strip()
+        if txt.startswith("```"):
+            txt = txt.strip("`")
+        i, j = txt.find("{"), txt.rfind("}")
+        if i < 0 or j < 0:
+            raise ValueError(f"no JSON in OCR reply: {txt[:120]}")
+        return json.loads(txt[i:j + 1])
+
+    def _ocr_extract(self, img_bytes):
+        """Read the payment screenshot with Gemini or Claude (vision) -> dict."""
+        prov = self._ocr_provider()
+        if not prov:
+            raise RuntimeError("no OCR key (GEMINI_API_KEY / ANTHROPIC_API_KEY)")
+        prompt = self._ocr_prompt()
+        b64 = base64.b64encode(img_bytes).decode()
+        if prov == "gemini":
+            key = os.environ["GEMINI_API_KEY"].strip()
+            # Google retires models regularly -> try several; remember the one that worked.
+            order = []
+            for m_ in (getattr(self, "_gem_model_ok", ""), os.environ.get("GEMINI_MODEL", "").strip(),
+                       "gemini-2.5-flash", "gemini-3.5-flash", "gemini-flash-latest",
+                       "gemini-3-flash-preview"):
+                if m_ and m_ not in order:
+                    order.append(m_)
+            last = ""
+            for model in order:
+                r = requests.post(
+                    f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+                    headers={"x-goog-api-key": key, "Content-Type": "application/json"},
+                    json={"contents": [{"parts": [
+                              {"inline_data": {"mime_type": "image/jpeg", "data": b64}},
+                              {"text": prompt}]}],
+                          "generationConfig": {"temperature": 0, "responseMimeType": "application/json"}},
+                    timeout=45)
+                if r.status_code == 200:
+                    parts = (r.json().get("candidates") or [{}])[0].get("content", {}).get("parts", [])
+                    try:
+                        out = self._parse_json_reply("".join(p_.get("text", "") for p_ in parts))
+                    except Exception as e:
+                        last = f"Gemini {model}: unreadable reply ({e})"
+                        continue
+                    if getattr(self, "_gem_model_ok", "") != model:
+                        logger.info(f"[OCR] Gemini model in use: {model}")
+                    self._gem_model_ok = model
+                    return out
+                last = f"Gemini {model} -> {r.status_code}: {r.text[:160]}"
+                logger.warning(f"[OCR] {last}")
+                if self.__dict__.get("_gem_model_ok") == model:
+                    self._gem_model_ok = ""
+                if r.status_code in (401, 403):          # bad / blocked key: other models will not help
+                    break
+            raise RuntimeError(last)
+        key = os.environ["ANTHROPIC_API_KEY"].strip()
+        r = requests.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={"x-api-key": key, "anthropic-version": "2023-06-01",
+                     "content-type": "application/json"},
+            json={"model": OCR_MODEL, "max_tokens": 500,
+                  "messages": [{"role": "user", "content": [
+                      {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": b64}},
+                      {"type": "text", "text": prompt}]}]},
+            timeout=60)
+        if r.status_code != 200:
+            raise RuntimeError(f"Claude API {r.status_code}: {r.text[:200]}")
+        return self._parse_json_reply("".join(
+            b_.get("text", "") for b_ in r.json().get("content", []) if b_.get("type") == "text"))
+
+    @staticmethod
+    def _bn2en(v):
+        """Bengali digits (০-৯) -> 0-9, Bengali comma/decimal marks -> ASCII."""
+        return str(v if v is not None else "").translate(
+            str.maketrans("০১২৩৪৫৬৭৮৯", "0123456789")).replace("٫", ".")
+
+    def _to_num(self, v):
+        try:
+            return float(self._bn2en(v).replace(",", "").replace("৳", "").replace("Tk", "").strip())
+        except Exception:
+            return None
+
+    def _auto_decide(self, d, caption, upload_dt, dep_id, chat_id):
+        """Returns (status, reason, info). status: ok | manual | dup | dup_pending"""
+        db = self.customer_db
+        info = {}
+        if not isinstance(d, dict):
+            return "manual", "OCR result unreadable", info
+        if not d.get("is_payment_screenshot"):
+            return "manual", "not a payment screenshot", info
+        if d.get("status_success") is False:
+            return "manual", "payment not shown as successful", info
+        trx = re.sub(r"[^A-Za-z0-9]", "", self._bn2en(d.get("trx_id"))).upper()
+        if not re.fullmatch(r"[A-Z0-9]{8,12}", trx):
+            return "manual", "Transaction ID not readable", info
+        info["trx"] = trx
+        amt, chg, tot = (self._to_num(d.get("amount")), self._to_num(d.get("charge")),
+                         self._to_num(d.get("total")))
+        if amt is not None and chg and tot and abs(amt - tot) < 0.01:
+            amt = round(tot - chg, 2)             # OCR picked "Total" -> remove the fee
+        if amt is None and tot is not None:
+            amt = round(tot - (chg or 0), 2)
+        if amt is None or amt <= 0:
+            return "manual", "amount not readable", info
+        if chg and tot and abs((amt + chg) - tot) > 0.5:
+            return "manual", f"Amount {amt:g} + Charge {chg:g} does not equal Total {tot:g}", info
+        info.update(amt=amt, chg=chg, tot=tot)
+
+        # duplicate TrxID (atomic claim)
+        ok, st, other = db.reserve_trx(trx, dep_id, chat_id, amt)
+        if not ok:
+            kind = "dup_pending" if st == "pending" else "dup"
+            return kind, f"TrxID {trx} already {st} (deposit #{other})", info
+
+        if str(d.get("confidence", "")).lower() == "low":
+            return "manual", "screenshot not clear enough (low confidence)", info
+        if d.get("looks_edited"):
+            return "manual", "screenshot looks edited", info
+        rec = re.sub(r"\D", "", self._bn2en(d.get("recipient_number")))[-11:]
+        allowed = {re.sub(r"\D", "", x)[-11:]
+                   for x in db.get_setting("auto_numbers", DEFAULT_AUTO_NUMBERS).split(",") if x.strip()}
+        if rec not in allowed:
+            return "manual", f"receiver number {rec or 'unknown'} is not one of your numbers", info
+        shot = None
+        for fmt in ("%Y-%m-%d %H:%M", "%Y-%m-%d %H:%M:%S"):
+            try:
+                shot = datetime.strptime(self._bn2en(d.get("datetime")).strip(), fmt).replace(tzinfo=BD_TZ)
+                break
+            except Exception:
+                pass
+        if not shot:
+            return "manual", "payment time not readable", info
+        try:
+            window = float(db.get_setting("auto_window_min", "5"))
+        except ValueError:
+            window = 5.0
+        delta = (upload_dt - shot).total_seconds() / 60.0
+        info["shot"] = shot.strftime("%Y-%m-%d %H:%M")
+        info["delta"] = delta
+        if delta > window:
+            return "manual", f"screenshot payment time is {delta:.0f} min before upload (limit {window:g})", info
+        if delta < -2:
+            return "manual", "payment time is in the future", info
+        m = re.search(r"\d+(?:[.,]\d+)?", self._bn2en(caption))
+        if m:
+            user_amt = float(m.group(0).replace(",", "."))
+            if abs(user_amt - amt) > 0.01:
+                return "manual", f"user wrote {user_amt:g} but screenshot amount is {amt:g}", info
+        try:
+            mx = float(db.get_setting("auto_max_bdt", "3000"))
+        except ValueError:
+            mx = 3000.0
+        if amt > mx:
+            return "manual", f"amount {amt:g} is above the auto limit {mx:g}", info
+        return "ok", "", info
+
+    def _auto_deposit_job(self, token, dep_id, chat_id, name, uname, file_id, caption, upload_ts):
+        master_id = self.chat_id_entry.get().strip()
+        db = self.customer_db
+
+        def to_manual(reason):
+            logger.info(f"[AUTO] #{dep_id} -> manual: {reason}")
+            try:
+                db.set_deposit_note(dep_id, "Auto-check: " + reason)
+            except Exception:
+                pass
+            self.send_message(token, chat_id,
+                              "⏳ Could not verify automatically. Sent to admin for manual review.\n"
+                              "You will be notified shortly.")
+            self._send_admin_deposit_card(token, master_id, dep_id, name, uname, chat_id, file_id,
+                                          extra=reason)
+        try:
+            d = self._ocr_extract(self._download_tg_file(token, file_id))
+            upload_dt = datetime.fromtimestamp(int(upload_ts), BD_TZ)
+            status, reason, info = self._auto_decide(d, caption, upload_dt, dep_id, chat_id)
+        except Exception as e:
+            logger.error(f"[AUTO] #{dep_id} error: {e}")
+            logger.error(traceback.format_exc())
+            to_manual(f"OCR/API error: {str(e)[:120]}")
+            return
+
+        if status == "dup":
+            db.reject_deposit(dep_id, "Duplicate TrxID")
+            self.send_message(token, chat_id,
+                              "❌ This Transaction ID was already used. Duplicate deposits are not allowed.")
+            self._send_text_direct(token, master_id,
+                                   f"🚫 DUPLICATE TrxID blocked\nDeposit #{dep_id} | {name}"
+                                   + (f" (@{uname})" if uname else "") + f" | {chat_id}\n{reason}")
+            return
+        if status == "dup_pending":
+            db.reject_deposit(dep_id, "Duplicate (pending) TrxID")
+            self.send_message(token, chat_id,
+                              "⏳ This Transaction ID is already submitted and waiting for admin review.")
+            return
+        if status != "ok":
+            to_manual(reason)
+            return
+
+        amt, trx = info["amt"], info["trx"]
+        if not db.approve_deposit(dep_id, amt, "BDT"):
+            to_manual("deposit record not found")
+            return
+        db.set_deposit_note(dep_id, f"AUTO-APPROVED trx={trx} shot={info['shot']} delta={info['delta']:.1f}min")
+        logger.info(f"[AUTO] #{dep_id} approved {amt:g} BDT trx={trx}")
+        self._notify_payment(token, dep_id, amt, "BDT")
+        self.send_message(token, chat_id,
+                          f"✅ Deposit approved automatically!\n"
+                          f"+{amt:g} BDT has been added to your balance.\n"
+                          f"Transaction ID: {trx}")
+        u = db.get_user(chat_id)
+        cap = (f"🤖 AUTO-APPROVED\n━━━━━━━━━━━━━━━━━━━━━\n"
+               f"🆔 Deposit #{dep_id} | 💵 {amt:g} BDT\n"
+               f"👤 {name}" + (f" (@{uname})" if uname else "") + f"\n💬 Chat ID: {chat_id}\n"
+               f"🔖 TrxID: {trx}\n🕒 Payment time: {info['shot']} ({info['delta']:.1f} min before upload)\n"
+               f"💳 New balance: ৳{(u[2] if u else 0):.2f}\n━━━━━━━━━━━━━━━━━━━━━\n"
+               f"Wrong? Tap Undo - balance is taken back and TrxID stays blocked.")
+        self.send_photo(token, master_id, file_id, cap,
+                        {"inline_keyboard": [[{"text": "❌ Undo (take back)",
+                                               "callback_data": f"dep_u_{dep_id}"}]]})
+
+    def _send_admin_deposit_card(self, token, master_id, dep_id, name, uname, chat_id, file_id, extra=""):
+        user_info = self.customer_db.get_user(chat_id)
+        cur_bal = user_info[2] if user_info else 0
+        cur = user_info[3] if user_info else "BDT"
+        sym = "৳" if cur == "BDT" else "$"
+        admin_caption = (
+            f"💰 DEPOSIT REQUEST\n"
+            f"━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🆔 Deposit ID: #{dep_id}\n"
+            f"👤 Name: {name}\n"
+            f"🏷️ Username: @{uname if uname else 'N/A'}\n"
+            f"💬 Chat ID: {chat_id}\n"
+            f"💳 Current Balance: {sym}{cur_bal:.2f} {cur}\n"
+            f"🕒 Time (BD): {datetime.now(BD_TZ).strftime('%Y-%m-%d %H:%M:%S')}\n"
+            + (f"🤖 Auto-check failed: {extra}\n" if extra else "") +
+            f"━━━━━━━━━━━━━━━━━━━━━\n"
+            f"Use buttons below, or:\n"
+            f"/approve {dep_id} <amt> <BDT|USD>\n"
+            f"/reject {dep_id}"
+        )
+        admin_kb = {"inline_keyboard": [
+            [{"text": "✅ 100৳", "callback_data": f"dep_a_{dep_id}_100_BDT"},
+             {"text": "✅ 500৳", "callback_data": f"dep_a_{dep_id}_500_BDT"},
+             {"text": "✅ 1000৳", "callback_data": f"dep_a_{dep_id}_1000_BDT"}],
+            [{"text": "💵 $5", "callback_data": f"dep_a_{dep_id}_5_USD"},
+             {"text": "💵 $10", "callback_data": f"dep_a_{dep_id}_10_USD"},
+             {"text": "💵 $50", "callback_data": f"dep_a_{dep_id}_50_USD"}],
+            [{"text": "✏️ Custom Amount / Currency", "callback_data": f"dep_custom_{dep_id}"}],
+            [{"text": "❌ Reject", "callback_data": f"dep_r_{dep_id}"}]
+        ]}
+        self.send_photo(token, master_id, file_id, admin_caption, admin_kb)
+        self._notify_admin(token,
+                           f"💰 New Deposit Request\n━━━━━━━━━━━━━━\n🆔 Deposit: #{dep_id}\n"
+                           f"👤 {name}" + (f" (@{uname})" if uname else "") + f"\n💬 Chat ID: {chat_id}\n"
+                           f"🕒 {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+                           master=False)
+        logger.info(f"[DEPOSIT ALERT] Sent to master_id={master_id} for #{dep_id}")
 
     def _restore_from_file(self, token, chat_id, file_id, file_name):
         """Admin sent a file in /restore mode: customers.db or a stock json."""
@@ -3136,7 +3582,8 @@ class BotApp:
              b(f"👥 Access: {'ON ✅' if access else 'OFF ⛔'}", "cp:access")],
             [b("📦 Stock", "cp:stock"), b("📊 Stats", "cp:stats")],
             [b("💳 Pending Deposits", "cp:deps"), b("📈 Purchases", "cp:purch")],
-            [b("🔔 Low-stock alert", "cp:ask:low"), b("❌ Close", "close")],
+            [b("🤖 Auto Deposit", "cp:auto"), b("🔔 Low-stock alert", "cp:ask:low")],
+            [b("❌ Close", "close")],
         ]
         self._cp_show(token, chat_id, message_id, text, rows)
 
@@ -3189,6 +3636,26 @@ class BotApp:
                 [b("⬅️ Back", "cp:main")]]
         self._cp_show(token, chat_id, message_id, text, rows)
 
+    def _cp_auto(self, token, chat_id, message_id):
+        db, b = self.customer_db, self._cp_b
+        on = db.get_setting("auto_dep", "1") == "1"
+        prov = self._ocr_provider()
+        win = db.get_setting("auto_window_min", "5")
+        mx = db.get_setting("auto_max_bdt", "3000")
+        nums = db.get_setting("auto_numbers", DEFAULT_AUTO_NUMBERS)
+        text = ("🤖 AUTO DEPOSIT\n━━━━━━━━━━━━━━\n"
+                f"Status: {'ON ✅' if on else 'OFF ⛔'}\n"
+                f"OCR: {('✅ ' + prov) if prov else '❌ GEMINI_API_KEY / ANTHROPIC_API_KEY missing -> manual mode'}\n"
+                f"⏱ Time window: {win} min\n"
+                f"💰 Max auto amount: ৳{mx}\n"
+                f"📱 Receiving numbers: {nums}\n━━━━━━━━━━━━━━\n"
+                "BDT users only. If any check fails, the deposit comes to you for manual approval.")
+        rows = [[b(f"🤖 Auto: {'ON ✅' if on else 'OFF ⛔'} (tap to switch)", "cp:autotog")],
+                [b("⏱ Time window", "cp:ask:autowin"), b("💰 Max amount", "cp:ask:automax")],
+                [b("📱 Receiving numbers", "cp:ask:autonum")],
+                [b("⬅️ Back", "cp:main")]]
+        self._cp_show(token, chat_id, message_id, text, rows)
+
     def _cp_stock(self, token, chat_id, message_id):
         lines = ["📦 STOCK\n━━━━━━━━━━━━━━"]
         for k in self._CP_TYPES:
@@ -3205,6 +3672,9 @@ class BotApp:
         "disc50": "🎟 Send the discount percent for 50+ pcs (0 = none). Example: 5",
         "disc100": "🎟 Send the discount percent for 100+ pcs (0 = none). Example: 10",
         "low": "🔔 Send the low-stock alert number. Example: 20",
+        "autowin": "⏱ Send the allowed minutes between payment time and upload. Example: 5",
+        "automax": "💰 Send the maximum amount (৳) that can be auto-approved. Above it = manual. Example: 3000",
+        "autonum": "📱 Send your receiving numbers (bKash/Nagad/Rocket), comma separated.\nExample: 01954054330,01711111111",
     }
 
     def _cp_ask(self, token, chat_id, message_id, parts):
@@ -3227,7 +3697,8 @@ class BotApp:
         elif what in self._CP_PROMPTS:
             self.user_states[chat_id] = f"cp_{what}"
             text = self._CP_PROMPTS[what]
-            back = "cp:users" if what in ("bal", "resetbal", "deluser", "ban", "unban") else "cp:disc"
+            back = ("cp:users" if what in ("bal", "resetbal", "deluser", "ban", "unban")
+                    else "cp:auto" if what.startswith("auto") else "cp:disc")
         else:
             return
         self._cp_show(token, chat_id, message_id, text + "\n\n(or tap Cancel)",
@@ -3259,6 +3730,12 @@ class BotApp:
             self._cp_disc(token, chat_id, message_id)
         elif act == "stock":
             self._cp_stock(token, chat_id, message_id)
+        elif act == "auto":
+            self._cp_auto(token, chat_id, message_id)
+        elif act == "autotog":
+            now = self.customer_db.get_setting("auto_dep", "1") == "1"
+            self.customer_db.set_setting("auto_dep", "0" if now else "1")
+            self._cp_auto(token, chat_id, message_id)
         elif act == "shop":
             now = self.customer_db.get_setting("shop_open", "1") == "1"
             self.customer_db.set_setting("shop_open", "0" if now else "1")
@@ -3385,6 +3862,26 @@ class BotApp:
             self.user_states.pop(chat_id, None)
             self._cp_done(token, chat_id, f"✅ {what[4:]}+ discount = {val:g}%", "cp:disc")
             return True
+        if what in ("autowin", "automax"):
+            try:
+                val = float(t)
+                if val <= 0:
+                    raise ValueError
+            except ValueError:
+                return retry("❌ Send a number greater than 0.")
+            db.set_setting("auto_window_min" if what == "autowin" else "auto_max_bdt", f"{val:g}")
+            self.user_states.pop(chat_id, None)
+            self._cp_done(token, chat_id, f"✅ Saved: {val:g}", "cp:auto")
+            return True
+        if what == "autonum":
+            nums = [re.sub(r"\D", "", x)[-11:] for x in t.replace("\n", ",").split(",")]
+            nums = [n for n in nums if len(n) == 11]
+            if not nums:
+                return retry("❌ Send 11-digit numbers, comma separated.")
+            db.set_setting("auto_numbers", ",".join(nums))
+            self.user_states.pop(chat_id, None)
+            self._cp_done(token, chat_id, f"✅ Receiving numbers: {', '.join(nums)}", "cp:auto")
+            return True
         if what == "low":
             if not t.isdigit():
                 return retry("❌ Send a whole number.")
@@ -3423,10 +3920,17 @@ class BotApp:
             except Exception as e:
                 logger.error(f"[load_backup] {e}")
 
+# ============================================================
+# এখানে আপনার আসল মান বসান (শুধু এই ৩ লাইন বদলাবেন)
+# ============================================================
+DEFAULT_BOT_TOKEN = "9057990624:AAEoVs-HD1cxfwwfp8GrlhhnYnHxOXFJkOs"      # <- আপনার বট টোকেন (BotFather থেকে)
+DEFAULT_MASTER_CHAT_ID = "5504053909"                                      # <- আপনার টেলিগ্রাম চ্যাট আইডি
+DEFAULT_GEMINI_API_KEY = "AQ.Ab8RN6KMkjWBd1nkyhC4CqIfAcffDTP5-oGGqwPixaYgFmkARg"         # <- আপনার Gemini API কী
+
 
 def load_settings():
-    """token + master chat id: environment > config.json > desktop backup json."""
-    token = os.environ.get("BOT_TOKEN", "9293694844:AAH8wZ2OnfQV-X95DvAt29j67mBnQ7hVYI4").strip()
+    """token + master chat id: environment > config.json > desktop backup json > default above."""
+    token = os.environ.get("BOT_TOKEN", "9057990624:AAEoVs-HD1cxfwwfp8GrlhhnYnHxOXFJkOs").strip()
     cid = os.environ.get("MASTER_CHAT_ID", "5504053909").strip()
     for path, tk_key, id_key in ((CONFIG_FILE, "token", "master_chat_id"),
                                  (BACKUP_FILE, "tg_token", "tg_chat_id")):
@@ -3440,14 +3944,34 @@ def load_settings():
                 cid = cid or str(d.get(id_key, "")).strip()
             except Exception as e:
                 logger.error(f"[settings] cannot read {path}: {e}")
-    return token, cid
+    return token or DEFAULT_BOT_TOKEN, cid or DEFAULT_MASTER_CHAT_ID
 
 
-# NOTE: no token is stored in this file (it will be on GitHub).
-# Set BOT_TOKEN and MASTER_CHAT_ID as Railway Variables (or config.json when running locally).
+def _load_api_key_from_config():
+    """Gemini / Anthropic key: environment > config.json > default above."""
+    try:
+        has_env = {n: bool(os.environ.get(n, "").strip()) for n in ("GEMINI_API_KEY", "ANTHROPIC_API_KEY")}
+        logger.info(f"[keys] env GEMINI_API_KEY={'set' if has_env['GEMINI_API_KEY'] else 'missing'}, "
+                    f"ANTHROPIC_API_KEY={'set' if has_env['ANTHROPIC_API_KEY'] else 'missing'} | "
+                    f"config.json: {CONFIG_FILE} ({'found' if os.path.exists(CONFIG_FILE) else 'NOT FOUND'})")
+        if os.path.exists(CONFIG_FILE):
+            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+            logger.info("[keys] config.json fields: " + ", ".join(sorted(cfg.keys())))
+            for env_name, cfg_name in (("ANTHROPIC_API_KEY", "anthropic_api_key"),
+                                       ("GEMINI_API_KEY", "gemini_api_key")):
+                val = str(cfg.get(cfg_name, "")).strip()
+                if val and not os.environ.get(env_name, "").strip():
+                    os.environ[env_name] = val
+    except Exception as e:
+        logger.error(f"[settings] keys from config.json: {e}")
+    # last fallback: the key written in this file
+    if not os.environ.get("GEMINI_API_KEY", "").strip() and DEFAULT_GEMINI_API_KEY:
+        os.environ["GEMINI_API_KEY"] = DEFAULT_GEMINI_API_KEY
 
 
 def main():
+    _load_api_key_from_config()
     token, cid = load_settings()
     logger.info(f"Data folder: {APP_FOLDER}")
     if not token or not cid:
