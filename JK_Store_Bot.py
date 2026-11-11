@@ -456,6 +456,9 @@ def tr_bn(text):
         return BN_PAYMENT
     if text == PAYMENT_INFO_USD:
         return BN_PAYMENT_USD
+    if "HOW AUTO DEPOSIT WORKS" in text and text.startswith("💳 Deposit / Payment Methods"):
+        _m = re.search(r"Within (\S+) minutes", text)
+        return BN_PAYMENT_AUTO.replace("{MIN}", _m.group(1) if _m else "5")
     for rx, rep in _BN_REGEX_C:
         text = rx.sub(rep, text)
     for en, bn in BN_PHRASES:
@@ -1867,8 +1870,10 @@ class BotApp:
             u_dep = self.customer_db.get_user(chat_id)
             if not is_admin and u_dep and u_dep[3] == "USD":
                 self.send_message(token, chat_id, PAYMENT_INFO_USD, reply_markup=kb)
-            else:
+            elif is_admin:
                 self.send_message(token, chat_id, PAYMENT_INFO, reply_markup=kb)
+            else:
+                self.send_message(token, chat_id, self._payment_text(True), reply_markup=kb)
             return
 
         if text == "📞 Support":
@@ -2665,6 +2670,20 @@ class BotApp:
         except Exception:
             return False
 
+    def _payment_text(self, bdt_user=True):
+        """Deposit info shown to users. When auto deposit is really active (and the
+        user is a BDT user) the text explains how auto deposit works; otherwise the
+        normal manual text is shown."""
+        if not bdt_user:
+            return PAYMENT_INFO_USD
+        if self._auto_enabled():
+            try:
+                win = float(self.customer_db.get_setting("auto_window_min", "5"))
+            except Exception:
+                win = 5.0
+            return PAYMENT_INFO_AUTO.replace("{MIN}", f"{win:g}")
+        return PAYMENT_INFO
+
     def _auto_status_text(self):
         on = self.customer_db.get_setting("auto_dep", "1") == "1"
         prov = self._ocr_provider()
@@ -3125,7 +3144,8 @@ class BotApp:
             return text
         if self._is_master(chat_id):
             # admin: only shareable texts are translated, reports/notifications stay as written
-            return tr_bn(text) if text in (POLICY_TEXT, PAYMENT_INFO, PAYMENT_INFO_USD) else text
+            return tr_bn(text) if (text in (POLICY_TEXT, PAYMENT_INFO, PAYMENT_INFO_USD)
+                                   or "HOW AUTO DEPOSIT WORKS" in text) else text
         return tr_bn(text)
 
     def _trm(self, chat_id, markup):
