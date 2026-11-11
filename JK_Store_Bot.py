@@ -177,30 +177,6 @@ Admin will verify and credit your balance in USD.
 ⚠️ Only send real payment screenshots. Fake attempts will be rejected."""
 
 
-_EN_TAIL_OLD = ("📸 After payment, send the payment screenshot here.\n"
-                "Admin will verify and credit your balance.\n\n"
-                "⚠️ Only send real payment screenshots. Fake attempts will be rejected.")
-_EN_TAIL_AUTO = ("⚡ HOW AUTO DEPOSIT WORKS (bKash / Nagad / Rocket)\n"
-                 "1️⃣ Send money to the number above.\n"
-                 "2️⃣ Within {MIN} minutes, send the full payment screenshot here.\n"
-                 "3️⃣ Write the amount you sent as the photo caption (example: 500).\n"
-                 "✅ If everything matches, your balance is added automatically within seconds.\n"
-                 "⏳ If it can't be verified automatically, the admin will check it manually.\n\n"
-                 "📌 Important:\n"
-                 "• The screenshot must clearly show the Transaction ID, amount and time "
-                 "(full screen, not cropped).\n"
-                 "• Screenshots older than {MIN} minutes go to manual review.\n"
-                 "• One Transaction ID can be used only once.\n"
-                 "• Binance / USDT payments are verified manually by the admin.\n\n"
-                 "⚠️ Only send real payment screenshots. Fake attempts will be rejected.")
-assert _EN_TAIL_OLD in PAYMENT_INFO
-PAYMENT_INFO_AUTO = PAYMENT_INFO.replace(_EN_TAIL_OLD, _EN_TAIL_AUTO).replace(
-    "💳 Deposit / Payment Methods\n\n",
-    "💳 Deposit / Payment Methods\n\n"
-    "⚡ bKash / Nagad / Rocket: AUTO deposit - balance is added automatically after you send the screenshot.\n"
-    "🪙 Binance / USDT: verified manually by admin.\n\n", 1)
-
-
 def parse_line_to_columns(line):
     line = line.strip()
     if not line:
@@ -334,29 +310,6 @@ BN_PAYMENT_USD = """💳 ডিপোজিট / পেমেন্ট মাধ
 
 ⚠️ শুধু আসল পেমেন্টের স্ক্রিনশট পাঠান। ভুয়া চেষ্টা বাতিল করা হবে।"""
 
-_BN_TAIL_OLD = ("📸 পেমেন্টের পর এখানে পেমেন্টের স্ক্রিনশট পাঠান।\n"
-                "অ্যাডমিন যাচাই করে আপনার ব্যালেন্সে যোগ করবে।\n\n"
-                "⚠️ শুধু আসল পেমেন্টের স্ক্রিনশট পাঠান। ভুয়া চেষ্টা বাতিল করা হবে।")
-_BN_TAIL_AUTO = ("⚡ অটো ডিপোজিট কীভাবে কাজ করে (bKash / Nagad / Rocket)\n"
-                 "১️⃣ উপরের নম্বরে টাকা পাঠান (Send Money)।\n"
-                 "২️⃣ {MIN} মিনিটের মধ্যে পুরো পেমেন্ট স্ক্রিনশট এখানে পাঠান।\n"
-                 "৩️⃣ ছবির ক্যাপশনে যত টাকা পাঠিয়েছেন সেটা লিখুন (যেমন: 500)।\n"
-                 "✅ সব মিলে গেলে কয়েক সেকেন্ডের মধ্যে আপনার ব্যালেন্সে স্বয়ংক্রিয়ভাবে যোগ হবে।\n"
-                 "⏳ স্বয়ংক্রিয়ভাবে যাচাই না হলে অ্যাডমিন ম্যানুয়ালি যাচাই করবে।\n\n"
-                 "📌 গুরুত্বপূর্ণ:\n"
-                 "• স্ক্রিনশটে ট্রানজেকশন আইডি, টাকার পরিমাণ ও সময় পরিষ্কার দেখা যেতে হবে "
-                 "(পুরো স্ক্রিন, কাটা নয়)।\n"
-                 "• {MIN} মিনিটের পুরোনো স্ক্রিনশট ম্যানুয়াল রিভিউয়ে যাবে।\n"
-                 "• একটা ট্রানজেকশন আইডি শুধু একবারই ব্যবহার করা যাবে।\n"
-                 "• Binance / USDT পেমেন্ট অ্যাডমিন ম্যানুয়ালি যাচাই করবে।\n\n"
-                 "⚠️ শুধু আসল পেমেন্টের স্ক্রিনশট পাঠান। ভুয়া চেষ্টা বাতিল করা হবে।")
-assert _BN_TAIL_OLD in BN_PAYMENT
-BN_PAYMENT_AUTO = BN_PAYMENT.replace(_BN_TAIL_OLD, _BN_TAIL_AUTO).replace(
-    "💳 ডিপোজিট / পেমেন্ট মাধ্যম\n\n",
-    "💳 ডিপোজিট / পেমেন্ট মাধ্যম\n\n"
-    "⚡ bKash / Nagad / Rocket: অটো ডিপোজিট - স্ক্রিনশট পাঠালে ব্যালেন্স নিজে থেকে যোগ হবে।\n"
-    "🪙 Binance / USDT: অ্যাডমিন ম্যানুয়ালি যাচাই করবে।\n\n", 1)
-
 REGION_BD_BTN = "🇧🇩 Bangladesh / বাংলাদেশ"
 REGION_OTHER_BTN = "🌍 Other Country (USD)"
 
@@ -456,9 +409,6 @@ def tr_bn(text):
         return BN_PAYMENT
     if text == PAYMENT_INFO_USD:
         return BN_PAYMENT_USD
-    if "HOW AUTO DEPOSIT WORKS" in text and text.startswith("💳 Deposit / Payment Methods"):
-        _m = re.search(r"Within (\S+) minutes", text)
-        return BN_PAYMENT_AUTO.replace("{MIN}", _m.group(1) if _m else "5")
     for rx, rep in _BN_REGEX_C:
         text = rx.sub(rep, text)
     for en, bn in BN_PHRASES:
@@ -1870,10 +1820,8 @@ class BotApp:
             u_dep = self.customer_db.get_user(chat_id)
             if not is_admin and u_dep and u_dep[3] == "USD":
                 self.send_message(token, chat_id, PAYMENT_INFO_USD, reply_markup=kb)
-            elif is_admin:
-                self.send_message(token, chat_id, PAYMENT_INFO, reply_markup=kb)
             else:
-                self.send_message(token, chat_id, self._payment_text(True), reply_markup=kb)
+                self.send_message(token, chat_id, PAYMENT_INFO, reply_markup=kb)
             return
 
         if text == "📞 Support":
@@ -2670,20 +2618,6 @@ class BotApp:
         except Exception:
             return False
 
-    def _payment_text(self, bdt_user=True):
-        """Deposit info shown to users. When auto deposit is really active (and the
-        user is a BDT user) the text explains how auto deposit works; otherwise the
-        normal manual text is shown."""
-        if not bdt_user:
-            return PAYMENT_INFO_USD
-        if self._auto_enabled():
-            try:
-                win = float(self.customer_db.get_setting("auto_window_min", "5"))
-            except Exception:
-                win = 5.0
-            return PAYMENT_INFO_AUTO.replace("{MIN}", f"{win:g}")
-        return PAYMENT_INFO
-
     def _auto_status_text(self):
         on = self.customer_db.get_setting("auto_dep", "1") == "1"
         prov = self._ocr_provider()
@@ -3144,8 +3078,7 @@ class BotApp:
             return text
         if self._is_master(chat_id):
             # admin: only shareable texts are translated, reports/notifications stay as written
-            return tr_bn(text) if (text in (POLICY_TEXT, PAYMENT_INFO, PAYMENT_INFO_USD)
-                                   or "HOW AUTO DEPOSIT WORKS" in text) else text
+            return tr_bn(text) if text in (POLICY_TEXT, PAYMENT_INFO, PAYMENT_INFO_USD) else text
         return tr_bn(text)
 
     def _trm(self, chat_id, markup):
