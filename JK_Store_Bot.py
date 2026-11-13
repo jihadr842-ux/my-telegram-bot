@@ -3426,7 +3426,7 @@ class BotApp:
 
 def load_settings():
     """token + master chat id: environment > config.json > desktop backup json."""
-    token = os.environ.get("BOT_TOKEN", "9293694844:AAH8wZ2OnfQV-X95DvAt29j67mBnQ7hVYI4").strip()
+    token = os.environ.get("BOT_TOKEN", "9174114244:AAGCS1QMi_MnTWSAbOMCD7HlJOM9dB4Zz1c").strip()
     cid = os.environ.get("MASTER_CHAT_ID", "5504053909").strip()
     for path, tk_key, id_key in ((CONFIG_FILE, "token", "master_chat_id"),
                                  (BACKUP_FILE, "tg_token", "tg_chat_id")):
